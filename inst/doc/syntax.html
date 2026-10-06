@@ -278,6 +278,7 @@ syntax</a>
 <li><a href="#interactions" id="toc-interactions">Interactions</a></li>
 <li><a href="#dummy-coded-attributes" id="toc-dummy-coded-attributes">Dummy-coded attributes</a></li>
 <li><a href="#constrained-designs" id="toc-constrained-designs">Constrained designs</a></li>
+<li><a href="#building-the-candidate-set" id="toc-building-the-candidate-set">Building the candidate set</a></li>
 <li><a href="#specifying-constants-and-levels-of-the-sq-alternative" id="toc-specifying-constants-and-levels-of-the-sq-alternative">Specifying
 constants and levels of the SQ alternative</a></li>
 <li><a href="#large-designs" id="toc-large-designs">Large
@@ -461,14 +462,14 @@ exclusions in your design when using the <code>rsc</code> algorithm. For
 details: <code>?rsc</code></p>
 <p>The <code>federov</code> and <code>random</code> algorithms will
 systematically or randomly select potential design candidates from the
-candidate set. The candidate set can be either supplied or assumed to be
-the full factorial. These algorithms completely lets go of attribute
-level balance and you do run the risk of some attribute levels not
-showing up in the final design. We show syntax below to include level
-occurrence restrictions below. You can easily include restrictions in
-your design using these to algorithms by excluding attribute level
-combinations from the candidate set. That way, they will never be part
-of the design.</p>
+candidate set. The candidate set can be either supplied or built from
+the utility functions (see ‘Building the candidate set’ below). These
+algorithms completely lets go of attribute level balance and you do run
+the risk of some attribute levels not showing up in the final design. We
+show syntax below to include level occurrence restrictions below. You
+can easily include restrictions in your design using these to algorithms
+by excluding attribute level combinations from the candidate set. That
+way, they will never be part of the design.</p>
 <p>Note that in general, both restrictions and attribute level balance
 may lead to less efficient designs and that if your restrictions are too
 tight and you are trying to force attribute level balance, no designs
@@ -579,20 +580,29 @@ and expanding it using a formula and the model.matrix. The first level
 is chosen as the baseline and dropped. Similarly, the priors are
 expanded into separate priors for each level. This also works with
 Bayesian priors.</p>
-<p>It is recommended to use 1, 2, 3, 4 for the levels of a dummy-coded
-attribute. Note that the levels don’t matter, but this naming convention
-secures that there is a correspondence between the names for the priors
-and attributes.</p>
+<p>The levels of a dummy-coded attribute <em>must</em> be 1, 2, …, K,
+where 1 is the base level. Only the number of levels matters for the
+design, and this convention ensures that the names of the expanded
+priors and attributes correspond, e.g. <code>b_x12</code> and
+<code>x12</code> for level 2. If your levels have a meaning, e.g. 1500,
+750 and 500 wind mills, code them as 1, 2 and 3 and keep track of the
+mapping yourself. <code>generate_design()</code> returns an error if a
+dummy-coded attribute has other levels, or does not have exactly one
+prior fewer than levels.</p>
 <p>A few things to note about using the <code>_dummy</code> syntax</p>
 <ol style="list-style-type: decimal">
 <li>The priors and levels must be specified simultaneously.</li>
 <li>You must specify one more level for the attribute than priors for
 the parameter.</li>
+<li>The levels must be 1, 2, …, K, where 1 is the base level.</li>
 <li>You cannot use <code>_dummy</code> as an extension for your
-attribute name.</li>
+attribute name. The extension belongs on the parameter,
+e.g. <code>b_x1_dummy[c(0.2, 0.5)] * x1[c(1, 2, 3)]</code>, and
+<code>generate_design()</code> returns an error if an attribute name
+ends in <code>_dummy</code>.</li>
 <li>If you are using specified levels for the status-quo or opt out
-alternative, make sure that this corresponds to the base level and is
-coded as a 0. See more details below.</li>
+alternative, make sure that this corresponds to the base level,
+i.e. level 1. See more details below.</li>
 <li>If you are using alternative specific dummy-coded attributes, make
 sure that you differentiate the names of the priors <em>before</em> the
 <code>_dummy</code> extension. Placing anything between
@@ -605,7 +615,7 @@ fail.</li>
 <p>When using the <code>federov</code> or <code>random</code>
 algorithms, we can pass along a list of exclusions to
 <code>generate_design</code>. The exclusions will exclude the specified
-combinations from the full factorial prior to generating design
+combinations from the candidate set prior to generating design
 candidates. The exclusions take the form of an unamed list of strings.
 You must ensure that the names of the list corresponds to the names of
 the expanded attribute levels (see
@@ -616,6 +626,38 @@ the expanded attribute levels (see
   &quot;alt2_x2 == 1 &amp; alt2_x3 == 1&quot;
 )
 </code></pre>
+</div>
+<div id="building-the-candidate-set" class="section level2">
+<h2>Building the candidate set</h2>
+<p>If you do not supply a candidate set, <code>generate_design()</code>
+builds it one alternative at a time with
+<code>build_candidate_set()</code> instead of from the full factorial of
+all alternatives. This uses far less memory, which matters for designs
+with many attributes, levels and alternatives.</p>
+<p>The profiles of each alternative are built first, and exclusions that
+only refer to a single alternative are applied to them straight away.
+Alternatives with identical utility functions and profiles, e.g. two
+unlabelled alternatives, are exchangeable. A choice task that only
+differs from another in the order of exchangeable alternatives is the
+same choice task, and by default each set of different profiles is only
+included once. The order of the exchangeable alternatives is randomised
+in each row so that no alternative systematically gets the same
+profiles. Labelled alternatives are combined as in the full
+factorial.</p>
+<p>Because the order of exchangeable alternatives is random, exclusions
+across exchangeable alternatives must be specified in both directions.
+For example, to exclude choice tasks where one alternative dominates the
+other:</p>
+<pre><code>exclusions = list(
+  &quot;alt1_x1 &lt;= alt2_x1 &amp; alt1_x2 &gt;= alt2_x2&quot;,
+  &quot;alt2_x1 &lt;= alt1_x1 &amp; alt2_x2 &gt;= alt1_x2&quot;
+)</code></pre>
+<p>If you want the profiles of exchangeable alternatives in every order,
+set <code>allow_reversed_pairs = TRUE</code> in the <code>control</code>
+list of <code>generate_design()</code>. This gives a much larger
+candidate set, and a warning is given if it has more than a million
+rows. You can also call <code>build_candidate_set()</code> directly,
+inspect the result and supply it as the candidate set.</p>
 </div>
 <div id="specifying-constants-and-levels-of-the-sq-alternative" class="section level2">
 <h2>Specifying constants and levels of the SQ alternative</h2>
@@ -656,6 +698,10 @@ this:</p>
 <li>You can use the <code>rsc</code> algorithm instead, which will
 obviate the need to have the full factorial present.</li>
 </ol>
+<p>Note that the candidate set built by <code>generate_design()</code>
+is already much smaller than the full factorial when the design has
+exchangeable alternatives, and that exclusions that refer to a single
+alternative reduce its size further.</p>
 </div>
 <div id="supplying-a-candidate-set" class="section level2">
 <h2>Supplying a candidate set</h2>

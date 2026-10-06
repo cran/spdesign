@@ -630,41 +630,42 @@ restrictions on level occurrence</h1>
 <span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>  <span class="at">alt3 =</span> <span class="st">&quot;b_sq[0]   * sq[1]&quot;</span></span>
 <span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>)</span>
 <span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a></span>
-<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="co"># Use the full factorial as the candidate set</span></span>
-<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a>candidate_set <span class="ot">&lt;-</span> <span class="fu">full_factorial</span>(</span>
-<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a>  <span class="fu">list</span>(</span>
-<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a>    <span class="at">alt1_x1 =</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>,</span>
-<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a>    <span class="at">alt1_x2 =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>),</span>
-<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a>    <span class="at">alt1_x3 =</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="fl">0.25</span>),</span>
-<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a>    <span class="at">alt2_x1 =</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>,</span>
-<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a>    <span class="at">alt2_x2 =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>),</span>
-<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a>    <span class="at">alt2_x3 =</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="fl">0.1</span>),</span>
-<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a>    <span class="at">alt3_sq =</span> <span class="dv">1</span></span>
-<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a>  )</span>
-<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a>)</span>
-<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a></span>
-<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a>candidate_set <span class="ot">&lt;-</span> candidate_set[</span>
-<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a>  <span class="sc">!</span>(candidate_set<span class="sc">$</span>alt1_x1 <span class="sc">==</span> <span class="dv">2</span> <span class="sc">&amp;</span></span>
-<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a>    candidate_set<span class="sc">$</span>alt1_x2 <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span></span>
-<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a>    candidate_set<span class="sc">$</span>alt1_x3 <span class="sc">==</span> <span class="dv">0</span>),</span>
-<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a>]</span>
-<span id="cb9-32"><a href="#cb9-32" tabindex="-1"></a>candidate_set <span class="ot">&lt;-</span> candidate_set[</span>
-<span id="cb9-33"><a href="#cb9-33" tabindex="-1"></a>  <span class="sc">!</span>(candidate_set<span class="sc">$</span>alt2_x2 <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> candidate_set<span class="sc">$</span>alt2_x3 <span class="sc">==</span> <span class="dv">1</span>),</span>
-<span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a>]</span>
-<span id="cb9-35"><a href="#cb9-35" tabindex="-1"></a></span>
-<span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a><span class="co"># Generate designs ----</span></span>
-<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a>design <span class="ot">&lt;-</span> <span class="fu">generate_design</span>(</span>
-<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a>  utility,</span>
-<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a>  <span class="at">rows =</span> <span class="dv">20</span>,</span>
-<span id="cb9-40"><a href="#cb9-40" tabindex="-1"></a>  <span class="at">model =</span> <span class="st">&quot;mnl&quot;</span>,</span>
-<span id="cb9-41"><a href="#cb9-41" tabindex="-1"></a>  <span class="at">efficiency_criteria =</span> <span class="st">&quot;d-error&quot;</span>,</span>
-<span id="cb9-42"><a href="#cb9-42" tabindex="-1"></a>  <span class="at">algorithm =</span> <span class="st">&quot;federov&quot;</span>,</span>
-<span id="cb9-43"><a href="#cb9-43" tabindex="-1"></a>  <span class="at">draws =</span> <span class="st">&quot;scrambled-sobol&quot;</span>,</span>
-<span id="cb9-44"><a href="#cb9-44" tabindex="-1"></a>  <span class="at">candidate_set =</span> candidate_set</span>
-<span id="cb9-45"><a href="#cb9-45" tabindex="-1"></a>)</span>
-<span id="cb9-46"><a href="#cb9-46" tabindex="-1"></a></span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="co"># Use the full factorial of attribute levels, which can differ from those in</span></span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co"># the utility functions, as the candidate set</span></span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a>candidate_set <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(</span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a>  <span class="fu">list</span>(</span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a>    <span class="at">alt1_x1 =</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>,</span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a>    <span class="at">alt1_x2 =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>),</span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a>    <span class="at">alt1_x3 =</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="fl">0.25</span>),</span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a>    <span class="at">alt2_x1 =</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>,</span>
+<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a>    <span class="at">alt2_x2 =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>),</span>
+<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a>    <span class="at">alt2_x3 =</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="fl">0.1</span>),</span>
+<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a>    <span class="at">alt3_sq =</span> <span class="dv">1</span></span>
+<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a>  )</span>
+<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a>)</span>
+<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a></span>
+<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a>candidate_set <span class="ot">&lt;-</span> candidate_set[</span>
+<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a>  <span class="sc">!</span>(candidate_set<span class="sc">$</span>alt1_x1 <span class="sc">==</span> <span class="dv">2</span> <span class="sc">&amp;</span></span>
+<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a>    candidate_set<span class="sc">$</span>alt1_x2 <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span></span>
+<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a>    candidate_set<span class="sc">$</span>alt1_x3 <span class="sc">==</span> <span class="dv">0</span>),</span>
+<span id="cb9-32"><a href="#cb9-32" tabindex="-1"></a>]</span>
+<span id="cb9-33"><a href="#cb9-33" tabindex="-1"></a>candidate_set <span class="ot">&lt;-</span> candidate_set[</span>
+<span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a>  <span class="sc">!</span>(candidate_set<span class="sc">$</span>alt2_x2 <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> candidate_set<span class="sc">$</span>alt2_x3 <span class="sc">==</span> <span class="dv">1</span>),</span>
+<span id="cb9-35"><a href="#cb9-35" tabindex="-1"></a>]</span>
+<span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a></span>
+<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a><span class="co"># Generate designs ----</span></span>
+<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a>design <span class="ot">&lt;-</span> <span class="fu">generate_design</span>(</span>
+<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a>  utility,</span>
+<span id="cb9-40"><a href="#cb9-40" tabindex="-1"></a>  <span class="at">rows =</span> <span class="dv">20</span>,</span>
+<span id="cb9-41"><a href="#cb9-41" tabindex="-1"></a>  <span class="at">model =</span> <span class="st">&quot;mnl&quot;</span>,</span>
+<span id="cb9-42"><a href="#cb9-42" tabindex="-1"></a>  <span class="at">efficiency_criteria =</span> <span class="st">&quot;d-error&quot;</span>,</span>
+<span id="cb9-43"><a href="#cb9-43" tabindex="-1"></a>  <span class="at">algorithm =</span> <span class="st">&quot;federov&quot;</span>,</span>
+<span id="cb9-44"><a href="#cb9-44" tabindex="-1"></a>  <span class="at">draws =</span> <span class="st">&quot;scrambled-sobol&quot;</span>,</span>
+<span id="cb9-45"><a href="#cb9-45" tabindex="-1"></a>  <span class="at">candidate_set =</span> candidate_set</span>
+<span id="cb9-46"><a href="#cb9-46" tabindex="-1"></a>)</span>
 <span id="cb9-47"><a href="#cb9-47" tabindex="-1"></a></span>
-<span id="cb9-48"><a href="#cb9-48" tabindex="-1"></a><span class="fu">summary</span>(design)</span></code></pre></div>
+<span id="cb9-48"><a href="#cb9-48" tabindex="-1"></a></span>
+<span id="cb9-49"><a href="#cb9-49" tabindex="-1"></a><span class="fu">summary</span>(design)</span></code></pre></div>
 </div>
 <div id="an-mnl-design-with-specified-explusions-applied-to-the-candidate-set" class="section level1">
 <h1>An MNL design with specified explusions applied to the candidate

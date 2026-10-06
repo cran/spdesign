@@ -31,16 +31,22 @@
 #' denominator. Must be specified when optimizing for 'c-error'
 #' @param candidate_set A matrix or data frame in the "wide" format containing
 #' all permitted combinations of attributes. The default is NULL. If no
-#' candidate set is provided, then the full factorial subject to specified
-#' exclusions will be used. This is passed in as an object and not a character
+#' candidate set is provided, then it is built from the utility functions
+#' subject to specified exclusions with \code{\link{build_candidate_set}}.
+#' This is passed in as an object and not a character
 #' string. The candidate set will be expanded to include zero columns to
 #' consider alternative specific attributes.
 #' @param exclusions A list of exclusions Often this list will be pulled
 #' directly from the list of options or it is a modified list of exclusions
 #' @param save_designs A boolean indicating whether to save up to 10 intermediate designs. The default value is FALSE.
-#' @param control A list of control options
+#' @param control A list of control options. Set `allow_reversed_pairs = TRUE`
+#' to include the profiles of exchangeable alternatives in every order when the
+#' candidate set is built. See \code{\link{build_candidate_set}}.
 #'
-#' @return An object of class 'spdesign'
+#' @return An object of class 'spdesign'. For the 'federov' algorithm, the list
+#' element 'runs' holds the best design of each run of the search and its
+#' efficiency criteria. The best design across all runs is the one returned as
+#' the design.
 #'
 #' @export
 generate_design <- function(
@@ -68,7 +74,8 @@ generate_design <- function(
     max_relabel = 10000,
     max_no_improve = 100000,
     efficiency_threshold = 0.000001,
-    sample_with_replacement = FALSE
+    sample_with_replacement = FALSE,
+    allow_reversed_pairs = FALSE
   )
 ) {
   # Match and check model arguments ----
@@ -81,13 +88,6 @@ generate_design <- function(
   design_object[["utility"]] <- utility
   design_object[["time"]] <- list(
     time_start = Sys.time()
-  )
-
-  # Make sure that the best design candidate is always return if the loop is
-  # stopped prematurely Can on.exit have a function?
-  on.exit(
-    return(design_object),
-    add = TRUE
   )
 
   ## Match arguments ----
@@ -105,6 +105,28 @@ generate_design <- function(
   stopifnot(!any_duplicates(utility))
   stopifnot(!too_small(utility, rows))
 
+  problem <- str_subset(attribute_names(utility), "_dummy$")
+
+  if (length(problem) > 0) {
+    stop(
+      "Attribute names cannot end in '_dummy'. To dummy-code an attribute, ",
+      "add '_dummy' to its parameter instead, e.g. ",
+      "'b_x1_dummy[c(0.1, 0.2)] * x1[c(1, 2, 3)]'. Please rename: ",
+      paste(problem, collapse = ", ")
+    )
+  }
+
+  problem <- invalid_dummy_coding(utility)
+
+  if (length(problem) > 0) {
+    stop(
+      "Dummy-coded attributes must have the levels 1, 2, ..., K, where 1 is ",
+      "the base level, and K - 1 priors. Please check the levels and priors ",
+      "of: ",
+      paste(problem, collapse = ", ")
+    )
+  }
+
   # Set the default for control and replace the specified values in control
   default_control <- list(
     cores = 1,
@@ -113,7 +135,8 @@ generate_design <- function(
     max_swap = 10000,
     max_no_improve = 100000,
     efficiency_threshold = 0.000001,
-    sample_with_replacement = FALSE
+    sample_with_replacement = FALSE,
+    allow_reversed_pairs = FALSE
   )
 
   control <- modifyList(default_control, control)
@@ -153,16 +176,20 @@ generate_design <- function(
   if (algorithm %in% c("random", "federov")) {
     cli_h2("Checking the candidate set and applying exclusions")
 
-    # If no candidate set is supplied generate full factorial if not run simple
-    # checks
+    # If no candidate set is supplied, build it with the exclusions applied.
+    # Otherwise, check the supplied candidate set and apply the exclusions.
     if (is.null(candidate_set)) {
       cli_alert_info(
-        "No candidate set supplied. The design will use the full factorial subject to supplied constraints."
+        "No candidate set supplied. The candidate set is built from the utility functions subject to supplied constraints."
       )
 
-      candidate_set <- full_factorial(expand_attribute_levels(utility))
+      candidate_set <- build_candidate_set(
+        utility,
+        exclusions,
+        control$allow_reversed_pairs
+      )
 
-      cli_alert_success("Full factorial created")
+      cli_alert_success("Candidate set created")
     } else {
       stopifnot((is.matrix(candidate_set) || is.data.frame(candidate_set)))
 
@@ -187,7 +214,7 @@ generate_design <- function(
       }
 
       # Extract only the specified in the utility function to check
-      regex <- paste0("\\b", attribute_names(utility))
+      regex <- as_whole_word(attribute_names(utility))
       utility_attributes <- vector(mode = "list", length = length(utility))
       for (i in seq_along(utility)) {
         idx <- str_detect(utility[[i]], regex)
@@ -209,27 +236,6 @@ generate_design <- function(
           )
         )
       }
-
-      # WHY DO I NEED TO CHECK THE ATTRIBUTE LEVELS WHEN I HAVE A SUPPLIED CANDIDATE SET?
-      candidate_levels <- apply(
-        candidate_set,
-        2,
-        function(x) unique(sort(x)),
-        simplify = FALSE
-      )
-      utility_levels <- lapply(expand_attribute_levels(utility), as.numeric)
-
-      # Subset utility levels to only correspond to the ones specified
-      utility_levels <- utility_levels[utility_attributes]
-
-      # Why do I have this check? It does not appear to do anything useful.
-      # if (!identical(candidate_levels[sort(names(candidate_levels))], utility_levels[sort(names(utility_levels))])) {
-      #   problem <- paste(names(which(mapply(function(x, y) length(x) - length(y), candidate_levels, utility_levels) != 0)), collapse = ", ")
-      #
-      #   stop(
-      #     paste0("The attribute levels determined by the supplied candidate set differs from those supplied in the utility function. Please ensure that all specified levels are present in the candidate set. The error occurs because there are too few/many levels for: ", problem, " in the candidate set")
-      #   )
-      # }
 
       # Expand candidate set to be square, i.e., fill in zero columns, for non-specified. This in case of
       # Alternative specific attributes!
@@ -253,10 +259,24 @@ generate_design <- function(
       }
 
       candidate_set <- candidate_set[, expanded_names]
-    }
 
-    # Apply the exclusions to the candidate set
-    candidate_set <- exclude(candidate_set, exclusions)
+      # Levels not listed in the utility functions are allowed, except for
+      # attributes with level occurrences specified
+      if (level_occurrences_specified(utility)) {
+        problem <- unlisted_levels(utility, candidate_set, rows)
+
+        if (length(problem) > 0) {
+          stop(
+            "Level occurrences are specified for ",
+            paste(problem, collapse = ", "),
+            ", but the candidate set contains levels for these attributes ",
+            "that are not listed in the utility functions."
+          )
+        }
+      }
+
+      candidate_set <- exclude(candidate_set, exclusions)
+    }
 
     # Transform the candiate set such that attributes that are dummy coded
     # are turned into factors. This ensures that we can use the model.matrix()
@@ -336,6 +356,16 @@ generate_design <- function(
       control
     )
   )
+
+  if (is.null(design_object[["design"]])) {
+    stop(
+      "No design with a non-singular Fisher information matrix was found in ",
+      control$max_iter,
+      " iterations. If exclusions or level occurrences are tight, increasing ",
+      "'max_iter' may help. Otherwise, check the utility functions for ",
+      "perfect multicollinearity."
+    )
+  }
 
   design_object[["time"]][["time_end"]] <- Sys.time()
 

@@ -142,7 +142,7 @@ No default algorithm for generating a design is implemented because they have di
 
 The `rsc` algorithm creates an initial design candidate based on the provided attributes, levels and number of rows. This design candidate is attribute level balanced by default (if the number of attribute levels for all attributes are a multiple of the number of rows) or near attribute level balanced. It will not deviate from this. It finds new candidates by relabling or swapping attribute levels. The default is to cycle between relabling and swapping each 10000 candidates. The cycling part of the algorithm is not included because it is rarely used in practice. You cannot include restrictions or exclusions in your design when using the `rsc` algorithm. For details: `?rsc`
 
-The `federov` and `random` algorithms will systematically or randomly select potential design candidates from the candidate set. The candidate set can be either supplied or assumed to be the full factorial. These algorithms completely lets go of attribute level balance and you do run the risk of some attribute levels not showing up in the final design. We show syntax below to include level occurrence restrictions below. You can easily include restrictions in your design using these to algorithms by excluding attribute level combinations from the candidate set. That way, they will never be part of the design. 
+The `federov` and `random` algorithms will systematically or randomly select potential design candidates from the candidate set. The candidate set can be either supplied or built from the utility functions (see 'Building the candidate set' below). These algorithms completely lets go of attribute level balance and you do run the risk of some attribute levels not showing up in the final design. We show syntax below to include level occurrence restrictions below. You can easily include restrictions in your design using these to algorithms by excluding attribute level combinations from the candidate set. That way, they will never be part of the design. 
 
 Note that in general, both restrictions and attribute level balance may lead to less efficient designs and that if your restrictions are too tight and you are trying to force attribute level balance, no designs may be found. Few checks are made to notify the user of this. 
 
@@ -226,22 +226,23 @@ V = list(
 )
 ```
 
-Here we have specified 2 priors and 3 levels. The dummy coding expands the attribute levels by transforming the attribute into a factor and expanding it using a formula and the model.matrix. The first level is chosen as the baseline and dropped. Similarly, the priors are expanded into separate priors for each level. This also works with Bayesian priors. 
+Here we have specified 2 priors and 3 levels. The dummy coding expands the attribute levels by transforming the attribute into a factor and expanding it using a formula and the model.matrix. The first level is chosen as the baseline and dropped. Similarly, the priors are expanded into separate priors for each level. This also works with Bayesian priors.
 
-It is recommended to use 1, 2, 3, 4 for the levels of a dummy-coded attribute. Note that the levels don't matter, but this naming convention secures that there is a correspondence between the names for the priors and attributes. 
+The levels of a dummy-coded attribute *must* be 1, 2, ..., K, where 1 is the base level. Only the number of levels matters for the design, and this convention ensures that the names of the expanded priors and attributes correspond, e.g. `b_x12` and `x12` for level 2. If your levels have a meaning, e.g. 1500, 750 and 500 wind mills, code them as 1, 2 and 3 and keep track of the mapping yourself. `generate_design()` returns an error if a dummy-coded attribute has other levels, or does not have exactly one prior fewer than levels.
 
 A few things to note about using the `_dummy` syntax
 
-1. The priors and levels must be specified simultaneously. 
+1. The priors and levels must be specified simultaneously.
 1. You must specify one more level for the attribute than priors for the parameter.
-1. You cannot use `_dummy` as an extension for your attribute name. 
-1. If you are using specified levels for the status-quo or opt out alternative, make sure that this corresponds to the base level and is coded as a 0. See more details below. 
+1. The levels must be 1, 2, ..., K, where 1 is the base level.
+1. You cannot use `_dummy` as an extension for your attribute name. The extension belongs on the parameter, e.g. `b_x1_dummy[c(0.2, 0.5)] * x1[c(1, 2, 3)]`, and `generate_design()` returns an error if an attribute name ends in `_dummy`.
+1. If you are using specified levels for the status-quo or opt out alternative, make sure that this corresponds to the base level, i.e. level 1. See more details below.
 1. If you are using alternative specific dummy-coded attributes, make sure that you differentiate the names of the priors *before* the `_dummy` extension. Placing anything between `_dummmy` and `[` will cause the code to fail.
 
 
 
 ## Constrained designs
-When using the `federov` or `random` algorithms, we can pass along a list of exclusions to `generate_design`. The exclusions will exclude the specified combinations from the full factorial prior to generating design candidates. The exclusions take the form of an unamed list of strings. You must ensure that the names of the list corresponds to the names of the expanded attribute levels (see `?expand_attribute_levels`). 
+When using the `federov` or `random` algorithms, we can pass along a list of exclusions to `generate_design`. The exclusions will exclude the specified combinations from the candidate set prior to generating design candidates. The exclusions take the form of an unamed list of strings. You must ensure that the names of the list corresponds to the names of the expanded attribute levels (see `?expand_attribute_levels`). 
 
 For example: 
 
@@ -252,6 +253,22 @@ exclusions = list(
 )
 
 ```
+
+## Building the candidate set
+If you do not supply a candidate set, `generate_design()` builds it one alternative at a time with `build_candidate_set()` instead of from the full factorial of all alternatives. This uses far less memory, which matters for designs with many attributes, levels and alternatives.
+
+The profiles of each alternative are built first, and exclusions that only refer to a single alternative are applied to them straight away. Alternatives with identical utility functions and profiles, e.g. two unlabelled alternatives, are exchangeable. A choice task that only differs from another in the order of exchangeable alternatives is the same choice task, and by default each set of different profiles is only included once. The order of the exchangeable alternatives is randomised in each row so that no alternative systematically gets the same profiles. Labelled alternatives are combined as in the full factorial.
+
+Because the order of exchangeable alternatives is random, exclusions across exchangeable alternatives must be specified in both directions. For example, to exclude choice tasks where one alternative dominates the other:
+
+```
+exclusions = list(
+  "alt1_x1 <= alt2_x1 & alt1_x2 >= alt2_x2",
+  "alt2_x1 <= alt1_x1 & alt2_x2 >= alt1_x2"
+)
+```
+
+If you want the profiles of exchangeable alternatives in every order, set `allow_reversed_pairs = TRUE` in the `control` list of `generate_design()`. This gives a much larger candidate set, and a warning is given if it has more than a million rows. You can also call `build_candidate_set()` directly, inspect the result and supply it as the candidate set.
 
 ## Specifying constants and levels of the SQ alternative
 You cannot currently specify fixed SQ levels. Specifying new attributes that can only take on a single level for the SQ leads to a computationally singular Hessian matrix (because there is no variation). To get around this, you can calculate what the size of the SQ constant would be given the defined attribute levels for the SQ and the assumed prior and include this as a single constant for the SQ alternative. This will ensure that the correct utility differences are used in the design. 
@@ -269,6 +286,8 @@ Creating large designs can be beneficial, however, if you have many attributes a
 
 1. You can supply a candidate set that is of a sufficient size
 2. You can use the `rsc` algorithm instead, which will obviate the need to have the full factorial present. 
+
+Note that the candidate set built by `generate_design()` is already much smaller than the full factorial when the design has exchangeable alternatives, and that exclusions that refer to a single alternative reduce its size further. 
 
 ## Supplying a candidate set
 You can supply a candidate set to use with the modified federov and random design algorithms. There are 2 important things with respect to the candidate set that `spdesign` will check for:
