@@ -1,7 +1,7 @@
 Package: spdesign
 Type: Package
 Title: Designing Stated Preference Experiments
-Version: 0.0.7
+Version: 0.0.8
 Authors@R: c(
   person("Erlend Dancke", "Sandorf", email = "erlend.dancke.sandorf@nmbu.no", role = c("aut", "cre")),
   person("Danny", "Campbell", email = "danny.campbell@stir.ac.uk", role = c("aut")))
@@ -16,9 +16,10 @@ Imports: cli, future, randtoolbox, matrixStats, dplyr, tibble
 Suggests: knitr, rmarkdown, testthat
 VignetteBuilder: knitr, rmarkdown
 Config/roxygen2/version: 8.0.0
+BugReports: https://github.com/edsandorf/spdesign/issues
 NeedsCompilation: no
-Packaged: 2026-10-06 06:11:41 UTC; edsandorf
+Packaged: 2026-10-30 11:33:25 UTC; edsandorf
 Author: Erlend Dancke Sandorf [aut, cre],
   Danny Campbell [aut]
 Repository: CRAN
-Date/Publication: 2026-10-06 06:20:02 UTC
+Date/Publication: 2026-10-30 12:40:02 UTC

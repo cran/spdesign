@@ -436,11 +436,16 @@ options are:</p>
 <pre><code>  default_control &lt;- list(
     cores = 1,
     max_iter = 10000,
-    max_relabel = 10000,
-    max_swap = 10000,
-    efficiency_threshold = 0.1,
-    sample_with_replacement = FALSE
+    max_relabel = 500,
+    max_swap = 500,
+    max_no_improve = 1000,
+    efficiency_threshold = 0.000001,
+    allow_reversed_pairs = FALSE
   )</code></pre>
+<p><code>max_relabel</code>, <code>max_swap</code> and
+<code>max_no_improve</code> are only used by the <code>rsc</code>
+algorithm, and <code>allow_reversed_pairs</code> only by the
+<code>random</code> and <code>federov</code> algorithms.</p>
 <div id="algorithms-and-attribute-level-balance" class="section level3">
 <h3>Algorithms and attribute level balance</h3>
 <p>No default algorithm for generating a design is implemented because
@@ -454,12 +459,15 @@ based on the provided attributes, levels and number of rows. This design
 candidate is attribute level balanced by default (if the number of
 attribute levels for all attributes are a multiple of the number of
 rows) or near attribute level balanced. It will not deviate from this.
-It finds new candidates by relabling or swapping attribute levels. The
-default is to cycle between relabling and swapping each 10000
-candidates. The cycling part of the algorithm is not included because it
-is rarely used in practice. You cannot include restrictions or
-exclusions in your design when using the <code>rsc</code> algorithm. For
-details: <code>?rsc</code></p>
+It finds new candidates by relabeling or swapping the attribute levels
+of one column at a time. It relabels for <code>max_relabel</code>
+iterations and then swaps for <code>max_swap</code> iterations, and so
+on. If there is no improvement in <code>max_no_improve</code>
+iterations, it restarts from a new design candidate. The cycling part of
+the algorithm is not included because it is rarely used in practice. You
+cannot include restrictions or exclusions in your design when using the
+<code>rsc</code> algorithm, and <code>generate_design()</code> returns
+an error if you try. For details: <code>?rsc</code></p>
 <p>The <code>federov</code> and <code>random</code> algorithms will
 systematically or randomly select potential design candidates from the
 candidate set. The candidate set can be either supplied or built from
